@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Starter</string>
+    <string name="introText">Assignment</string>
+    <string name="btnToneStart" translatable="false">Tone</string>
+    <string name="btnRecStart" translatable="false">Rec Start</string>
+    <string name="btnRecStop" translatable="false">Rec Stop</string>
+    <string name="textMsg1">Msg Display</string>
+</resources>
