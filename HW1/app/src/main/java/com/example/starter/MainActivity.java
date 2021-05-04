@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     private int bufferCount;
     private int [] recData;
     private int fullCount;
-    private Thread thGlAudio;
+    private Thread thAudioGl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,42 +46,59 @@ public class MainActivity extends AppCompatActivity {
     public void createTone(View view){
         TextView text_top = (TextView)findViewById(R.id.introText);
         text_top.setText("Assignment 1 GO");
-
-        Runnable myRunnable = () -> {
-            Process.setThreadPriority(0);
-            final int duration = 30; // duration of sound
-            final int sampleRate = 48000; // sampling frequency
-            final int numSamples = duration * sampleRate;
-            final double[] samples = new double[numSamples];
-//        final short[] buffer = new short[numSamples];
-            final int note = 10000;
-            final byte generatedSnd[] = new byte[2 * numSamples];
-            for (int i = 0; i < numSamples; ++i)
-            {
-                samples[i] =  Math.sin(2 * Math.PI * i / (sampleRate / note)); // Sine wave
-//            buffer[i] = (short) (samples[i] * Short.MAX_VALUE);  // Higher amplitude increases volume
-            }
-            int idx = 0;
-            for (final double dVal : samples) {
-                // scale to maximum amplitude
-                final short val = (short) ((dVal * 32767));
-                // in 16 bit wav PCM, first byte is the low order byte
-                generatedSnd[idx++] = (byte) (val & 0x00ff);
-                generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
-
+        int bufferSize = AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+        AudioSpeaker thAudio = new AudioSpeaker(this, 48000, AudioFormat.CHANNEL_OUT_MONO, new AudioSpeaker.SampleGenerator(){
+            @Override
+            public short[] generate(){
+                final int sampleRate = 48000; // sampling frequency
+//
+                final int note = 18000;
+                short [] buffer = new short[bufferSize];
+                for(int i=0; i<bufferSize; i++){
+                    buffer[i] = (short) (Math.sin(2*Math.PI*note/sampleRate*i)*Short.MAX_VALUE);
+                }
+                return buffer;
             }
 
-            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
-                    sampleRate, AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT, generatedSnd.length,
-                    AudioTrack.MODE_STATIC);
-            audioTrack.write(generatedSnd, 0, generatedSnd.length);
-            audioTrack.play();
-            Log.v(TAG, "Check Play");
-
-        };
-        Thread thAudio = new Thread(myRunnable);
+        });
         thAudio.start();
+
+
+//        Runnable myRunnable = () -> {
+//            Process.setThreadPriority(0);
+//            final int duration = 8; // duration of sound
+//            final int sampleRate = 48000; // sampling frequency
+//            final int numSamples = duration * sampleRate;
+//            final double[] samples = new double[numSamples];
+////        final short[] buffer = new short[numSamples];
+//            final int note = 9000;
+//            final byte generatedSnd[] = new byte[2 * numSamples];
+//            for (int i = 0; i < numSamples; ++i)
+//            {
+//                samples[i] =  Math.sin(2 * Math.PI * i / (sampleRate / note)); // Sine wave
+////            buffer[i] = (short) (samples[i] * Short.MAX_VALUE);  // Higher amplitude increases volume
+//            }
+//            int idx = 0;
+//            for (final double dVal : samples) {
+//                // scale to maximum amplitude
+//                final short val = (short) ((dVal * 32767));
+//                // in 16 bit wav PCM, first byte is the low order byte
+//                generatedSnd[idx++] = (byte) (val & 0x00ff);
+//                generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
+//
+//            }
+//
+//            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+//                    sampleRate, AudioFormat.CHANNEL_OUT_MONO,
+//                    AudioFormat.ENCODING_PCM_16BIT, 2*generatedSnd.length,
+//                    AudioTrack.MODE_STATIC);
+//            audioTrack.write(generatedSnd, 0, generatedSnd.length);
+//            audioTrack.play();
+//            Log.v(TAG, "Check Play");
+//
+//        };
+//        Thread thAudio = new Thread(myRunnable);
+//        thAudio.start();
 
 //        Log.v(TAG, "index=hello" );
 //        double [] im = new double[2048];
@@ -153,23 +170,23 @@ public class MainActivity extends AppCompatActivity {
                     }
                     double maxFFT = Arrays.stream(fftMag).max().getAsDouble();
                     fullCount +=1;
-                    if (fullCount==100){
+                    if (fullCount==5){
                         fullCount = 0;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
 //                            Log.d(TAG, "Yo Yo thread");
                                 textBottom.setText("Audio Processing");
-                                if (thGlAudio != null && thGlAudio.isAlive()) thGlAudio.resume();
+//                                if (thGlAudio != null && thGlAudio.isAlive()) thGlAudio.resume();
 //                            Log.v(TAG, "index=hello" );
                                 LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
 //        int index = Arrays.asList(fftMag).indexOf(maxFFT);
-                                for (int i = 0; i<power2; i++) {series.appendData(new DataPoint(i, fftMag[i]/maxFFT), true, power2);
+                                for (int i = 0; i<power2; i++) {series.appendData(new DataPoint(i, Math.log10(fftMag[i])/Math.log10(maxFFT)), true, power2);
 //                                Log.v(TAG, "index " + i +" hello" + fftMag[i]);
 
                                 }
 //                            Log.v(TAG, "index See " + index_maxNumber);
-
+                                graph.removeAllSeries();
                                 graph.addSeries(series);
                                 graph.getViewport().setMinX(0);
                                 graph.getViewport().setMaxX(power2);
