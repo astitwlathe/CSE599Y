@@ -16,6 +16,8 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import org.jtransforms.fft.DoubleFFT_1D;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -131,46 +133,57 @@ public class MainActivity extends AppCompatActivity {
 ////        Log.v(TAG, "Size :" + size + " & Rate: " + rate);
 
     public void recStart(View view) throws InterruptedException{
-        int fftWindow = 4800;
-        int power2 = 8192;
-//        Log.v(TAG, "Yo Yo1");
+        int sampleWindow = 4800;
+//        int power2 = 8192;
+        Log.v(TAG, "Yo Yo1");
         RecorderStereo th = new RecorderStereo(48000, 256, new RecorderStereo.Callback(){
             @Override
             public void call(short[] data){
                 // Done for dupData when filled can then be processed for FFT.
 
-                double [] dupData = new double [power2];
+                double [] dupData = new double [2 * sampleWindow];
                 Arrays.fill(dupData, 0);
                 bufferCount += 128;
 //                Log.v(TAG, "Yo Yo new buffer"+bufferCount);
 //                for(int i=0; i<30; i++)  Log.v(TAG, "Yo Yo data"+ data[i]+ "m"+i);
-                for(int i = bufferCount-128; i < bufferCount && i < fftWindow; i++) {
+                for(int i = bufferCount-128; i < bufferCount && i < sampleWindow; i++) {
 //                    Log.v(TAG, "Yo Yo Loop"+i);
                     recData[i] = data[i-bufferCount+128];
 //                    Log.v(TAG, "Yo Yo end copy"+ data[127]);
                 }
 //                Log.v(TAG, "Yo Yo end copy"+ data[127]);
-                if (bufferCount > fftWindow) {
-
-                    bufferCount -= fftWindow;
-                    for(int i=0; i<fftWindow; i++) dupData[i] = recData[i];
+                if (bufferCount > sampleWindow) {
+//                    Log.v(TAG, "Yo Yo bufferCount > sampleWindow check");
+                    bufferCount -= sampleWindow;
+                    for(int i=0; i<sampleWindow; i++) {
+                        dupData[i] = (double) recData[i]/Short.MAX_VALUE;
+//                        Log.v(TAG, "Yo Yo Next Rdata: "+ dupData[i]);
+                    }
                     Arrays.fill(recData, 0);
                     for(int i = bufferCount; i < 128; i++) recData[i-bufferCount] = data[i];
-                    for(int i = bufferCount; i < 128; i++) recData[i-bufferCount] = data[i];
-
+//                    for(int i = bufferCount; i < 128; i++) recData[i-bufferCount] = data[i];
+//                    Log.v(TAG, "Yo Yo Next Check");
                     // Taking FFT and updating chart
                     final double [] fDupData = dupData;
-                    FFT fft = new FFT(power2);
-                    double [] im = new double[power2];
 
-                    fft.fft(fDupData, im);
-                    double [] fftMag = new double[power2];
-                    for (int i = 0; i < power2; i++) {
-                        fftMag[i] = Math.pow(fDupData[i], 2) + Math.pow(im[i], 2);
+//                    FFT fft = new FFT(power2);
+                    DoubleFFT_1D fft = new DoubleFFT_1D(sampleWindow);
+//                    double [] im = new double[sampleWindow];
+
+                    fft.realForwardFull(dupData);
+                    double [] fftMag = new double[sampleWindow];
+//                    Log.v(TAG, "Yo Yo Next Check2");
+                    for (int i = 0; i < sampleWindow; i++) {
+                        fftMag[i] = Math.pow(dupData[i], 2);
+//                        Log.v(TAG, "Yo Yo Next Rdata: "+ dupData[i]);
                     }
+//                    Log.v(TAG, "Yo Yo Next Check3");
+//                    fftMag[0] = Math.pow(fDupData[0], 2);
+//                    fftMag[1] = Math.pow(fDupData[sampleWindow/2], 2);
+//                    Log.v(TAG, "Yo Yo end copy 1:"+ fDupData[1] + " | n/2: " + Math.pow(dupData[1], 2));
                     double maxFFT = Arrays.stream(fftMag).max().getAsDouble();
                     fullCount +=1;
-                    if (fullCount==5){
+                    if (fullCount==10){
                         fullCount = 0;
                         runOnUiThread(new Runnable() {
                             @Override
@@ -180,20 +193,20 @@ public class MainActivity extends AppCompatActivity {
 //                                if (thGlAudio != null && thGlAudio.isAlive()) thGlAudio.resume();
 //                            Log.v(TAG, "index=hello" );
                                 LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
-//        int index = Arrays.asList(fftMag).indexOf(maxFFT);
-                                for (int i = 0; i<power2; i++) {series.appendData(new DataPoint(i, Math.log10(fftMag[i])/Math.log10(maxFFT)), true, power2);
+//        int index = Arrays.asList(fftMag).indexOf(maxFFT); /Math.log10(maxFFT)
+                                for (int i = 1734; i<1866; i++) {series.appendData(new DataPoint(i, 20*Math.log10(fftMag[i])), true, 1024);
 //                                Log.v(TAG, "index " + i +" hello" + fftMag[i]);
 
                                 }
 //                            Log.v(TAG, "index See " + index_maxNumber);
                                 graph.removeAllSeries();
                                 graph.addSeries(series);
-                                graph.getViewport().setMinX(0);
-                                graph.getViewport().setMaxX(power2);
-                                graph.getViewport().setXAxisBoundsManual(true);
-                                graph.getViewport().setMinY(0);
-                                graph.getViewport().setMaxY(2);
-                                graph.getViewport().setYAxisBoundsManual(true);
+//                                graph.getViewport().setMinX(1024);
+//                                graph.getViewport().setMaxX(2400);
+//                                graph.getViewport().setXAxisBoundsManual(true);
+//                                graph.getViewport().setMinY(0);
+//                                graph.getViewport().setMaxY(2);
+//                                graph.getViewport().setYAxisBoundsManual(true);
 
 
                             }
