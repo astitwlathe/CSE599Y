@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private int [] recData;
     private int fullCount;
     private Thread thAudioGl;
+    private boolean init;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
         textBottom = findViewById(R.id.textMsg1);
         graph = findViewById(R.id.graph);
         fullCount = 0;
+
     }
 
     public void createTone(View view){
@@ -173,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
                     fft.realForwardFull(dupData);
                     double [] fftMag = new double[sampleWindow];
 //                    Log.v(TAG, "Yo Yo Next Check2");
+
                     for (int i = 0; i < sampleWindow; i++) {
                         fftMag[i] = Math.pow(dupData[i], 2);
 //                        Log.v(TAG, "Yo Yo Next Rdata: "+ dupData[i]);
@@ -182,14 +185,37 @@ public class MainActivity extends AppCompatActivity {
 //                    fftMag[1] = Math.pow(fDupData[sampleWindow/2], 2);
 //                    Log.v(TAG, "Yo Yo end copy 1:"+ fDupData[1] + " | n/2: " + Math.pow(dupData[1], 2));
                     double maxFFT = Arrays.stream(fftMag).max().getAsDouble();
+                    int maxIndex = Arrays.asList(maxFFT).indexOf(maxFFT);
+
+                    boolean rightSide = false;
+                    boolean leftSide = false;
+                    double relDrop = 0.1 * maxFFT;
+                    for(int i=maxIndex; i<maxIndex+10 && i<fftMag.length-1; i++){
+                        Log.v(TAG, "Yo Yo in loop - fft value "+fftMag[i] + " | rel drop: "+ relDrop + " | index: " + i);
+                        if(fftMag[i]>relDrop) {rightSide=true;}
+                       else rightSide=false;
+                    }
+//                    Log.v(TAG, "Yo Yo Work");
+                    relDrop = 0.002 * maxFFT;
+                    for(int i=maxIndex; i>maxIndex-10 && i>=0; i--){
+//                        Log.v(TAG, "Yo Yo in 2 loop"+i);
+                        if(fftMag[i]>=relDrop) {leftSide=true;}
+                        else leftSide=false;
+                    }
+                    final boolean fRightSide = rightSide;
+                    final boolean fLeftSide = leftSide;
+//                    Log.v(TAG, "Yo Yo check");
                     fullCount +=1;
-                    if (fullCount==10){
+                    if (fullCount==1){
                         fullCount = 0;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
+
 //                            Log.d(TAG, "Yo Yo thread");
-                                textBottom.setText("Audio Processing");
+                                if(fRightSide)  textBottom.setText("Push Gesture");
+                                else if(fLeftSide) textBottom.setText("Gllllllllll Gesture");
+                                else textBottom.setText("Audio Processing");
 //                                if (thGlAudio != null && thGlAudio.isAlive()) thGlAudio.resume();
 //                            Log.v(TAG, "index=hello" );
                                 LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
