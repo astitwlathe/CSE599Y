@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
         graph = findViewById(R.id.graph);
         fullCount = 0;
 
+
     }
 
     public void createTone(View view){
@@ -66,66 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
         });
         thAudio.start();
-
-
-//        Runnable myRunnable = () -> {
-//            Process.setThreadPriority(0);
-//            final int duration = 8; // duration of sound
-//            final int sampleRate = 48000; // sampling frequency
-//            final int numSamples = duration * sampleRate;
-//            final double[] samples = new double[numSamples];
-////        final short[] buffer = new short[numSamples];
-//            final int note = 9000;
-//            final byte generatedSnd[] = new byte[2 * numSamples];
-//            for (int i = 0; i < numSamples; ++i)
-//            {
-//                samples[i] =  Math.sin(2 * Math.PI * i / (sampleRate / note)); // Sine wave
-////            buffer[i] = (short) (samples[i] * Short.MAX_VALUE);  // Higher amplitude increases volume
-//            }
-//            int idx = 0;
-//            for (final double dVal : samples) {
-//                // scale to maximum amplitude
-//                final short val = (short) ((dVal * 32767));
-//                // in 16 bit wav PCM, first byte is the low order byte
-//                generatedSnd[idx++] = (byte) (val & 0x00ff);
-//                generatedSnd[idx++] = (byte) ((val & 0xff00) >>> 8);
-//
-//            }
-//
-//            AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
-//                    sampleRate, AudioFormat.CHANNEL_OUT_MONO,
-//                    AudioFormat.ENCODING_PCM_16BIT, 2*generatedSnd.length,
-//                    AudioTrack.MODE_STATIC);
-//            audioTrack.write(generatedSnd, 0, generatedSnd.length);
-//            audioTrack.play();
-//            Log.v(TAG, "Check Play");
-//
-//        };
-//        Thread thAudio = new Thread(myRunnable);
-//        thAudio.start();
-
-//        Log.v(TAG, "index=hello" );
-//        double [] im = new double[2048];
-//        FFT fft = new FFT(2048);
-//        double [] small = Arrays.copyOfRange(samples,0,2048);
-//        fft.fft(small, im);
-//        double [] fftMag = new double[2048];
-//        for (int i = 0; i < small.length; i++) {
-//            fftMag[i] = Math.pow(small[i], 2) + Math.pow(im[i], 2);
-//        }
-//        Log.v(TAG, "index=hello" );
-//        GraphView graph = (GraphView) findViewById(R.id.graph);
-//        LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
-//        double maxFFT = Arrays.stream(fftMag).max().getAsDouble();
-//        List <Double> place = Arrays.stream(fftMag).boxed().collect(Collectors.toList());
-//        int index_maxNumber = place.indexOf(Collections.max(place));
-////        int index = Arrays.asList(fftMag).indexOf(maxFFT);
-//        for (int i = 0; i<2048; i++) {series.appendData(new DataPoint(i, fftMag[i]/maxFFT), true, 2048);
-//            Log.v(TAG, "index " + i +" hello" + fftMag[i]);}
-//        Log.v(TAG, "index See " + index_maxNumber);
-//        graph.addSeries(series);
-
-
     }
 
 //          Ideal Values find for audio, run the following code
@@ -158,11 +99,17 @@ public class MainActivity extends AppCompatActivity {
 //                    Log.v(TAG, "Yo Yo bufferCount > sampleWindow check");
                     bufferCount -= sampleWindow;
                     for(int i=0; i<sampleWindow; i++) {
-                        dupData[i] = (double) recData[i]/Short.MAX_VALUE;
+                        dupData[i] = (double) recData[i]/Short.MAX_VALUE*(.53836-.46164*Math.cos(2*Math.PI*i/(sampleWindow-1)));
 //                        Log.v(TAG, "Yo Yo Next Rdata: "+ dupData[i]);
                     }
+                    int [] tmpRecdata = recData;
                     Arrays.fill(recData, 0);
-                    for(int i = bufferCount; i < 128; i++) recData[i-bufferCount] = data[i];
+
+
+                    System.arraycopy(tmpRecdata, sampleWindow/2, recData, 0, sampleWindow/2);
+
+                    for(int i = bufferCount; i < 128; i++) recData[i+sampleWindow/2-bufferCount] = data[i];
+                    bufferCount += sampleWindow/2;
 //                    for(int i = bufferCount; i < 128; i++) recData[i-bufferCount] = data[i];
 //                    Log.v(TAG, "Yo Yo Next Check");
                     // Taking FFT and updating chart
@@ -185,36 +132,51 @@ public class MainActivity extends AppCompatActivity {
 //                    fftMag[1] = Math.pow(fDupData[sampleWindow/2], 2);
 //                    Log.v(TAG, "Yo Yo end copy 1:"+ fDupData[1] + " | n/2: " + Math.pow(dupData[1], 2));
                     double maxFFT = Arrays.stream(fftMag).max().getAsDouble();
-                    int maxIndex = Arrays.asList(maxFFT).indexOf(maxFFT);
+                    int maxIndex = Arrays.asList(fftMag).indexOf(maxFFT);
+                    maxFFT = Double.MIN_VALUE;
+                    for(int i = 0; i< fftMag.length/2; i++){
+                        if (maxFFT<fftMag[i]){
+                            maxIndex = i;
+                            maxFFT = fftMag[i];
+                        }
+                    }
 
                     boolean rightSide = false;
                     boolean leftSide = false;
+//                    double relDrop = 0.16 * maxFFT;
                     double relDrop = 0.1 * maxFFT;
-                    for(int i=maxIndex; i<maxIndex+10 && i<fftMag.length-1; i++){
-                        Log.v(TAG, "Yo Yo in loop - fft value "+fftMag[i] + " | rel drop: "+ relDrop + " | index: " + i);
-                        if(fftMag[i]>relDrop) {rightSide=true;}
+                    Log.v(TAG, "Yo Yo end copy"+leftSide+ "fft max Index"+maxIndex);
+                    Log.v(TAG, "Yo Yo end copy"+leftSide+ "fft magnitude"+maxFFT);
+                    for(int i=maxIndex+18; i<maxIndex+24 && i<fftMag.length-1; i++){
+//                        Log.v(TAG, "Yo Yo in loop - fft value "+fftMag[i] + " | rel drop: "+ relDrop + " | index: " + i);
+                        if((0*fftMag[i-1]+1*fftMag[i]+0*fftMag[i+1]+0*fftMag[i+2])/1>relDrop) {rightSide=true; break;}
                        else rightSide=false;
                     }
 //                    Log.v(TAG, "Yo Yo Work");
-                    relDrop = 0.002 * maxFFT;
-                    for(int i=maxIndex; i>maxIndex-10 && i>=0; i--){
+//                    relDrop = 0.0301 * maxFFT;
+                    relDrop = 0.1 * maxFFT;
+                    for(int i=maxIndex-10; i>maxIndex-14 && i>=1; i--){
 //                        Log.v(TAG, "Yo Yo in 2 loop"+i);
-                        if(fftMag[i]>=relDrop) {leftSide=true;}
+                        if((0*fftMag[i-1]+1*fftMag[i]+0*fftMag[i+1]+0*fftMag[i+2])/1>relDrop) {leftSide=true;break;}
                         else leftSide=false;
                     }
+                    Log.v(TAG, "Yo Yo end copy"+leftSide+ "fft val"+maxIndex);
                     final boolean fRightSide = rightSide;
                     final boolean fLeftSide = leftSide;
 //                    Log.v(TAG, "Yo Yo check");
                     fullCount +=1;
                     if (fullCount==1){
-                        fullCount = 0;
+                        if(fRightSide || fLeftSide)
+                        fullCount = -250;
+                        else fullCount = 0;
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
 
 //                            Log.d(TAG, "Yo Yo thread");
-                                if(fRightSide)  textBottom.setText("Push Gesture");
-                                else if(fLeftSide) textBottom.setText("Gllllllllll Gesture");
+//                            Log.v(TAG, "Yo Yo thread" + fLeftSide);
+                                if(fLeftSide) textBottom.setText("Pull Gesture");
+                                else if(fRightSide)  textBottom.setText("Push Gesture");
                                 else textBottom.setText("Audio Processing");
 //                                if (thGlAudio != null && thGlAudio.isAlive()) thGlAudio.resume();
 //                            Log.v(TAG, "index=hello" );
