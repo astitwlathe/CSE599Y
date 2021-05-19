@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         gNoise[1] += Math.pow(gSamples[1].get(i) - gBias[1], 2);
                         gNoise[2] += Math.pow(gSamples[2].get(i) - gBias[2], 2);
                     }
-                    for(int i=0; i<3; i++)aNoise[i] /= nSamples;
+                    for(int i=0; i<3; i++)gNoise[i] /= nSamples;
                     for(int i=0; i<3; i++)gNoise[i] = Math.sqrt(gNoise[i]);
                 }
 
@@ -201,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 Log.v(TAG, "Qt values:"+ qt.x0+ "|"+qt.x1+ "|"+qt.x2+"|"+qt.x3);
                 Quaternion qVectorGlobal = qt.times(qVector.times(qt.inverse()));
                 Log.v(TAG, "Qt Global values:"+ qVectorGlobal.x0+ "|"+qVectorGlobal.x1+ "|"+qVectorGlobal.x2+"|"+qVectorGlobal.x3);
-                double angle = Math.acos(qVectorGlobal.x3);
+                double angle = Math.acos(qVectorGlobal.x3)+3.14;
 
                 double nVectorMagnitude = Math.sqrt(Math.pow(qVectorGlobal.x2, 2)+Math.pow(qVectorGlobal.x1, 2));
                 double [] axis = {qVectorGlobal.x2/nVectorMagnitude, -qVectorGlobal.x1/nVectorMagnitude, 0};
@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 qt = qTilt.times(qt);
                 Log.v(TAG, "Execute: check Go"+qt.x0);
                 double theta = 2*Math.acos(qt.x0);
-                series.appendData(new DataPoint(count, theta), true, 1024);
+                series.appendData(new DataPoint(count, theta-3.14), true, 1024);
                 count++;
                 Log.v(TAG, "Execute1: ");
                 TextView resultText = (TextView)findViewById(R.id.result);
