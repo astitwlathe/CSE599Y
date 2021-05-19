@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Tilt</string>
+    <string name="introText">Assignment</string>
+    <string name="result">Results</string>
+    <string name="rButtonA">Accelerometer</string>
+    <string name="rButtonG">Gyroscope</string>
+    <string name="rButtonBAG">Complementary Filter</string>
+    <string name="calibrateButton">Calibrate</string>
+    <string name="plotButton">Plot</string>
+
+
+
+</resources>
